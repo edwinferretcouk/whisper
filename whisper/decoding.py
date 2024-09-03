@@ -146,6 +146,7 @@ class PyTorchInference(Inference):
         self.model: "Whisper" = model
         self.initial_token_length = initial_token_length
         self.kv_cache = {}
+        self.kv_cache2 = None
         self.hooks = []
 
         key_modules = [block.attn.key for block in self.model.decoder.blocks]
@@ -153,15 +154,35 @@ class PyTorchInference(Inference):
         self.kv_modules = key_modules + value_modules
 
     def logits(self, tokens: Tensor, audio_features: Tensor) -> Tensor:
-        if not self.kv_cache:
-            self.kv_cache, self.hooks = self.model.install_kv_cache_hooks()
+        if True: # Using the original kv_cache
+            if not self.kv_cache:
+                self.kv_cache, self.hooks = self.model.install_kv_cache_hooks()
 
-        if tokens.shape[-1] > self.initial_token_length:
-            # only need to use the last token except in the first forward pass
-            tokens = tokens[:, -1:]
+            if tokens.shape[-1] > self.initial_token_length:
+                # only need to use the last token except in the first forward pass
+                tokens = tokens[:, -1:]
 
-        return self.model.decoder(tokens, audio_features, kv_cache=self.kv_cache)
+            return self.model.decoder(tokens, audio_features, kv_cache=self.kv_cache)
 
+        if True: # Using new kv_cache
+            
+            n_group = tokens.shape[0]
+            if self.kv_cache2 is None:
+                self.kv_cache2 = self.model.new_kv_cache(n_group, self.initial_token_length)
+                offset = 0
+            else:
+                offset = self.kv_cache2.shape[2]
+                new_kv_cache = self.model.new_kv_cache(n_group, offset + 1)
+                new_kv_cache[:, :, :-1, :] = self.kv_cache2
+                self.kv_cache2 = new_kv_cache
+
+            if tokens.shape[-1] > self.initial_token_length:
+                # only need to use the last token except in the first forward pass
+                tokens = tokens[:, -1:]
+
+            output, self.kv_cache2 = self.model.decoder(tokens, audio_features, kv_cache=self.kv_cache2, offset=offset)
+            return output
+    
     def cleanup_caching(self):
         for hook in self.hooks:
             hook.remove()
@@ -169,12 +190,15 @@ class PyTorchInference(Inference):
         self.kv_cache = {}
         self.hooks = []
 
+        self.kv_cache2 = None
+
     def rearrange_kv_cache(self, source_indices):
         if source_indices != list(range(len(source_indices))):
             for module in self.kv_modules:
                 # update the key/value cache to contain the selected sequences
                 self.kv_cache[module] = self.kv_cache[module][source_indices].detach()
 
+        self.kv_cache2 = self.kv_cache2[:, source_indices]
 
 class SequenceRanker:
     def rank(

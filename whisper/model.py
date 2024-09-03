@@ -257,8 +257,11 @@ class Whisper(nn.Module):
         return self.encoder(mel)
 
     def logits(self, tokens: torch.Tensor, audio_features: torch.Tensor):
-        return self.decoder(tokens, audio_features)
-
+        #return self.decoder(tokens, audio_features)
+        kv_cache = self.new_kv_cache(tokens.shape[0], tokens.shape[-1])
+        output, _ = self.decoder(tokens, audio_features, kv_cache=kv_cache, offset=0)
+        return output
+    
     def forward(
         self, mel: torch.Tensor, tokens: torch.Tensor
     ) -> Dict[str, torch.Tensor]:
@@ -309,6 +312,23 @@ class Whisper(nn.Module):
         self.decoder.apply(install_hooks)
         return cache, hooks
 
+    def new_kv_cache(
+        self,
+        n_group: int,
+        length: int,
+    ):
+        if self.model_name == "tiny.en" or self.model_name == "tiny":
+            size = [8, n_group, length, 384]
+        elif self.model_name == "base.en" or self.model_name == "base":
+            size = [12, n_group, length, 512]
+        elif self.model_name == "small.en" or self.model_name == "small":
+            size = [24, n_group, length, 768]
+        elif self.model_name == "medium.en" or self.model_name == "medium":
+            size = [48, n_group, length, 1024]
+        else:
+            raise ValueError(f"Unsupported model type: {self.type}")
+        return np.zeros(size, dtype=np.float32)
+
     detect_language = detect_language_function
-    transcribe = transcribe_function
+    #transcribe = transcribe_function
     decode = decode_function
