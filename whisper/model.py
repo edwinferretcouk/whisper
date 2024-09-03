@@ -317,16 +317,16 @@ class Whisper(nn.Module):
         n_group: int,
         length: int,
     ):
-        if self.model_name == "tiny.en" or self.model_name == "tiny":
-            size = [8, n_group, length, 384]
-        elif self.model_name == "base.en" or self.model_name == "base":
-            size = [12, n_group, length, 512]
-        elif self.model_name == "small.en" or self.model_name == "small":
-            size = [24, n_group, length, 768]
-        elif self.model_name == "medium.en" or self.model_name == "medium":
-            size = [48, n_group, length, 1024]
-        else:
-            raise ValueError(f"Unsupported model type: {self.type}")
+        #if self.model_name == "tiny.en" or self.model_name == "tiny":
+        size = [8, n_group, length, 384]
+        #elif self.model_name == "base.en" or self.model_name == "base":
+        #size = [12, n_group, length, 512]
+        #elif self.model_name == "small.en" or self.model_name == "small":
+        #size = [24, n_group, length, 768]
+        #elif self.model_name == "medium.en" or self.model_name == "medium":
+        #size = [48, n_group, length, 1024]
+        #else:
+        #raise ValueError(f"Unsupported model type: {self.type}")
         return np.zeros(size, dtype=np.float32)
 
     detect_language = detect_language_function
