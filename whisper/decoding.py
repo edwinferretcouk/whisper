@@ -154,7 +154,7 @@ class PyTorchInference(Inference):
         self.kv_modules = key_modules + value_modules
 
     def logits(self, tokens: Tensor, audio_features: Tensor) -> Tensor:
-        if True: # Using the original kv_cache
+        if False: #True: # Using the original kv_cache
             if not self.kv_cache:
                 self.kv_cache, self.hooks = self.model.install_kv_cache_hooks()
 

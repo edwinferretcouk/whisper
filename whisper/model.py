@@ -236,7 +236,7 @@ class TextDecoder(nn.Module):
                 x @ torch.transpose(self.token_embedding.weight.to(x.dtype), 0, 1)
             ).float()
 
-            return logits
+            return logits, kv_cache # This is wrong because kv_cache has not been updated!!!
             
 
 class Whisper(nn.Module):
