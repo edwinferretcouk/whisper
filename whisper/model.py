@@ -193,7 +193,7 @@ class TextDecoder(nn.Module):
         mask = torch.empty(n_ctx, n_ctx).fill_(-np.inf).triu_(1)
         self.register_buffer("mask", mask, persistent=False)
 
-    def forward(self, x: Tensor, xa: Tensor, kv_cache: Optional[dict] = None, offset: Optional[Int] = 0):
+    def forward(self, x: Tensor, xa: Tensor, kv_cache: Optional[dict] = None, offset: Optional[int] = 0):
         """
         x : torch.LongTensor, shape = (batch_size, <= n_ctx)
             the text tokens
